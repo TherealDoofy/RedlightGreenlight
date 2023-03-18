@@ -1,0 +1,53 @@
+//First, create a trigger and name it "startTrigger". This trigger will be used to start the game when players enter it.
+
+startTrigger = createTrigger ["EmptyDetector", [0,0,0], false];
+startTrigger setTriggerArea [20, 20, 0, false];
+startTrigger setTriggerActivation ["ANYPLAYER", "PRESENT", true];
+startTrigger setTriggerStatements ["this", "hint 'Red light, green light!'; gameStarted = true;", ""];
+
+
+//Next, create another trigger and name it "finishTrigger". This trigger will be used to end the game when a player reaches it.
+
+finishTrigger = createTrigger ["EmptyDetector", [0,0,0], false];
+finishTrigger setTriggerArea [20, 20, 0, false];
+finishTrigger setTriggerActivation ["ANYPLAYER", "PRESENT", true];
+finishTrigger setTriggerStatements ["_player = _this select 0; if (gameStarted && playerIsMoving) then {hint format ['Player %1 wins!', name _player]; gameStarted = false;};", ""];
+
+Create a game logic and name it "redLightGreenLight". This game logic will be used to control the game and manage the players.
+
+redLightGreenLight = createGroup civilian createUnit [0,0,0];
+gameStarted = false;
+playerIsMoving = false;
+players = [];
+
+//Create an event handler for when a player enters the game area. This event handler will add the player to the "players" array and set "playerIsMoving" to true.
+
+onPlayerEntered = {
+  params ["_player"];
+  players pushBack _player;
+  playerIsMoving = true;
+};
+startTrigger setTriggerActivation ["ANYPLAYER", "PRESENT", true];
+startTrigger setTriggerStatements ["_player = _this select 0; if (gameStarted) then {[_player] call onPlayerEntered;};", ""];
+
+//Create an event handler for when a player leaves the game area. This event handler will remove the player from the "players" array and set "playerIsMoving" to false.
+
+onPlayerLeft = {
+  params ["_player"];
+  players = players - [_player];
+  playerIsMoving = count players > 0;
+};
+finishTrigger setTriggerActivation ["ANYPLAYER", "PRESENT", true];
+finishTrigger setTriggerStatements ["_player = _this select 0; if (gameStarted) then {[_player] call onPlayerLeft;};", ""];
+
+//Finally, create a loop that will continuously check if the game is started and whether players are moving. If the game is started and no players are moving, it will display a message indicating that the game is over.
+
+while {true} do {
+  if (gameStarted && !playerIsMoving) then {
+    hint "Game over!";
+    gameStarted = false;
+  };
+  sleep 1;
+};
+
+
